@@ -31,9 +31,9 @@ import unicodedata
 if TYPE_CHECKING:
     from fontTools.ttLib import TTFont
 
-import core.core_console_styles as cs
-from core.core_file_collector import collect_font_files
-from core.core_font_sorter import FontSorter, FontInfo
+import FontCore.core_console_styles as cs
+from FontCore.core_file_collector import collect_font_files
+from FontCore.core_font_sorter import FontSorter, FontInfo
 
 # Get the themed console singleton
 console = cs.get_console()
