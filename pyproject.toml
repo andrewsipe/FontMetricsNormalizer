@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ebrium"
+version = "1.0.0"
+description = "Font metrics normalization tool for family-wide metric consistency"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [
+    {name = "Andrew Sipe", email = "andrewsipe@example.com"}
+]
+license = {text = "MIT"}
+dependencies = [
+    "fonttools>=4.40.0",
+    "rich>=13.0.0",
+]
+
+[project.scripts]
+ebrium = "ebrium.cli:main"
+
+[tool.setuptools]
+packages = ["ebrium"]
+
+[tool.setuptools.package-dir]
+"" = "."
+
+[tool.setuptools.package-data]
+ebrium = ["py.typed"]

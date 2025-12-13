@@ -1,8 +1,8 @@
-# Metrics dependencies
+# FontMetricsNormalizer (ebrium) dependencies
 # Font metrics normalization tool for family-wide metric consistency.
 
-# Core dependencies (required by all scripts)
+# Core dependencies
 fonttools>=4.40.0
 rich>=13.0.0
 
-# No additional dependencies beyond core
+# No additional dependencies required
