@@ -1,0 +1,38 @@
+# Root directory
+https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/README.md
+https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/pyproject.toml
+https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/requirements.txt
+
+# ebrium/
+https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/ebrium/__init__.py
+https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/ebrium/__main__.py
+https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/ebrium/application.py
+https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/ebrium/checkpoints.py
+https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/ebrium/cli.py
+https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/ebrium/clustering.py
+https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/ebrium/config.py
+https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/ebrium/font_io.py
+https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/ebrium/grouping.py
+https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/ebrium/measurements.py
+https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/ebrium/models.py
+https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/ebrium/planning.py
+https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/ebrium/validation.py
+
+# FontCore/
+https://raw.githubusercontent.com/andrewsipe/FontCore/main/CoreDemoTool.py
+https://raw.githubusercontent.com/andrewsipe/FontCore/main/README.md
+https://raw.githubusercontent.com/andrewsipe/FontCore/main/__init__.py
+https://raw.githubusercontent.com/andrewsipe/FontCore/main/core_console_styles.py
+https://raw.githubusercontent.com/andrewsipe/FontCore/main/core_error_handling.py
+https://raw.githubusercontent.com/andrewsipe/FontCore/main/core_file_collector.py
+https://raw.githubusercontent.com/andrewsipe/FontCore/main/core_filename_parts_parser.py
+https://raw.githubusercontent.com/andrewsipe/FontCore/main/core_font_sorter.py
+https://raw.githubusercontent.com/andrewsipe/FontCore/main/core_font_style_dictionaries.py
+https://raw.githubusercontent.com/andrewsipe/FontCore/main/core_logging_config.py
+https://raw.githubusercontent.com/andrewsipe/FontCore/main/core_name_policies.py
+https://raw.githubusercontent.com/andrewsipe/FontCore/main/core_nameid_replacer_base.py
+https://raw.githubusercontent.com/andrewsipe/FontCore/main/core_namerecord_matcher.py
+https://raw.githubusercontent.com/andrewsipe/FontCore/main/core_string_utils.py
+https://raw.githubusercontent.com/andrewsipe/FontCore/main/core_ttx_table_io.py
+https://raw.githubusercontent.com/andrewsipe/FontCore/main/core_variable_font_detection.py
+https://raw.githubusercontent.com/andrewsipe/FontCore/main/requirements.txt
