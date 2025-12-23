@@ -627,9 +627,8 @@ def apply_metrics(fp: str, fm: FontMeasures, dry_run: bool) -> Tuple[bool, str]:
 
         if dry_run:
             indicator = (
-                cs.StatusIndicator("updated")
+                cs.StatusIndicator("updated", dry_run=True)
                 .add_file(fp, filename_only=False)
-                .as_preview()
             )
             if upm_note:
                 indicator.add_message(upm_note.strip())

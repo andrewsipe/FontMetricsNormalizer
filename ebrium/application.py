@@ -101,9 +101,8 @@ def apply_metrics(fp: str, fm: FontMeasures, dry_run: bool) -> Tuple[bool, str]:
 
         if dry_run:
             indicator = (
-                cs.StatusIndicator("updated")
+                cs.StatusIndicator("updated", dry_run=True)
                 .add_file(fp, filename_only=False)
-                .as_preview()
             )
             if upm_note:
                 indicator.add_message(upm_note.strip())
@@ -278,9 +277,10 @@ def process_all(measures, dry_run=False):
                 unchanged += 1
         cs.emit(msg, console=console)
 
-    label = "Preview" if dry_run else "Processing Completed!"
     cs.emit("")
-    cs.StatusIndicator("success").add_message(label).with_summary_block(
+    cs.StatusIndicator("success", dry_run=dry_run).add_message(
+        "Processing Completed!"
+    ).with_summary_block(
         updated=updated, unchanged=unchanged, errors=errors
     ).emit(console)
 
