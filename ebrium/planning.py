@@ -626,9 +626,8 @@ def apply_metrics(fp: str, fm: FontMeasures, dry_run: bool) -> Tuple[bool, str]:
             upm_note = f" [dim](UPM: {fm.upm}, family majority: {fm.family_upm_majority})[/dim]"
 
         if dry_run:
-            indicator = (
-                cs.StatusIndicator("updated", dry_run=True)
-                .add_file(fp, filename_only=False)
+            indicator = cs.StatusIndicator("updated", dry_run=True).add_file(
+                fp, filename_only=False
             )
             if upm_note:
                 indicator.add_message(upm_note.strip())
