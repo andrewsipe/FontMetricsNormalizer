@@ -1,13 +1,7 @@
 # Root directory
 https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/.gitmodules
-https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/CHECKPOINT_AUDIT.md
-https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/CLUSTERING_AUDIT.md
 https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/FontCore
-https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/Improvements.md
-https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/OS2_UPDATE_ANALYSIS.md
-https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/Project structure.md
 https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/README.md
-https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/VERBOSITY_AUDIT.md
 https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/pyproject.toml
 https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/requirements.txt
 
