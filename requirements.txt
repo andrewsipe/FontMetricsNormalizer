@@ -5,4 +5,5 @@
 fonttools>=4.40.0
 rich>=13.0.0
 
-# No additional dependencies required
+# WOFF2 support (fonttools uses Brotli to decompress WOFF2)
+brotli>=1.0.9
