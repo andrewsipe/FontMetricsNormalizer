@@ -88,7 +88,8 @@ python -m ebrium /path/to/fonts -r --report
 - `--no-auto-adjust` - Disable automatic target adjustment based on x-height
 
 ### Family Grouping
-- `--superfamily` - Auto-group by common prefix
+- **Default (`--family`)**: Group by OpenType family name (name table). Each family is normalized on its own. Use this when you have **multiple typefaces from the same foundry** (e.g. BerninaSans, Globus, Mashine) so each design family gets its own metrics.
+- `--superfamily` - Merge families that share a **common name prefix** into one group and normalize together. Use only when you have **one design family** split across several name-table families (e.g. "Source Sans 3", "Source Sans 3 Condensed") that should share the same metrics. Do **not** use for "same foundry, different families" — that will force one normalization target across unrelated typefaces.
 - `--ignore-term TERM, -it TERM` - Ignore token when grouping superfamilies (can be repeated)
 - `--exclude-family FAMILY, -ef FAMILY` - Exclude families from superfamily grouping (can be repeated)
 - `--group "Font A,Font B", -g "Font A,Font B"` - Force merge families (can be repeated)
@@ -116,6 +117,10 @@ python -m ebrium ~/fonts/MyFontFamily -r --target-percent 1.4
 
 # Group multiple families together
 python -m ebrium ~/fonts -r --group "Font Sans,Font Sans Pro"
+
+# Same foundry, different families (e.g. JAF BerninaSans, JAF Globus, JAF Mashine)
+# Use default grouping so each typeface family is normalized separately
+python -m ebrium ~/fonts/JAF-demo-fonts -r
 
 # Process each font individually (no family grouping)
 python -m ebrium ~/fonts -r --per-font
