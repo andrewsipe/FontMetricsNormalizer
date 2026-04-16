@@ -1,6 +1,6 @@
 """Font I/O helper functions for reading and analyzing font files."""
 
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Tuple
 
 if TYPE_CHECKING:
     from fontTools.ttLib import TTFont
@@ -76,6 +76,24 @@ def _font_cmap_glyph_names(font: TTFont) -> List[str]:
         return list(font.getGlyphOrder())
     except Exception:
         return []
+
+
+def _glyph_advance_widths(
+    font: TTFont, codepoints: Sequence[int]
+) -> Dict[int, int]:
+    """Get advance widths for specified codepoints from the hmtx table."""
+    cmap = _get_best_cmap(font)
+    hmtx = font.get("hmtx")
+    if not hmtx:
+        return {}
+    metrics = hmtx.metrics
+    result: Dict[int, int] = {}
+    for cp in codepoints:
+        glyph_name = cmap.get(cp)
+        if glyph_name and glyph_name in metrics:
+            advance_width, _ = metrics[glyph_name]
+            result[cp] = int(advance_width)
+    return result
 
 
 def _font_overall_bounds(font: TTFont) -> Optional[Tuple[float, float]]:

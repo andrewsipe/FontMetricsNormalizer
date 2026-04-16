@@ -30,6 +30,7 @@ FontMeasures = models.FontMeasures
 analyze_family_impact = planning.analyze_family_impact
 compute_family_normalized_extremes = planning.compute_family_normalized_extremes
 compute_family_normalized_ascender = planning.compute_family_normalized_ascender
+detect_uniwidth_family = planning.detect_uniwidth_family
 
 
 def validate_args(args: argparse.Namespace) -> None:
@@ -93,6 +94,7 @@ def validate_args(args: argparse.Namespace) -> None:
         getattr(args, "assume_script", None)
         or getattr(args, "assume_decorative", None)
         or getattr(args, "assume_unicase", None)
+        or getattr(args, "assume_uniwidth", None)
     ):
         cs.emit("", console=console)
         cs.StatusIndicator("info").add_message("Detection overrides active:").emit(
@@ -110,6 +112,10 @@ def validate_args(args: argparse.Namespace) -> None:
         if getattr(args, "assume_unicase", None):
             for pattern in args.assume_unicase:
                 cs.emit(f"  • Unicase: {pattern}", console=console)
+
+        if getattr(args, "assume_uniwidth", None):
+            for pattern in args.assume_uniwidth:
+                cs.emit(f"  • Uniwidth: {pattern}", console=console)
 
 
 def confirm_or_exit(count: int) -> None:
@@ -177,6 +183,9 @@ def report_changes(families, plans, args, forced_groups) -> bool:
                 family_label += " [darktext.dim](superfamily)[/darktext.dim]"
             elif forced_groups and any(fam in fg for fg in forced_groups):
                 family_label += " [darktext.dim](forced group)[/darktext.dim]"
+
+        if any(fm.is_uniwidth for fm in group):
+            family_label += " [darktext.dim](uniwidth)[/darktext.dim]"
 
         # Adjust label for individual mode
         field_label = "Font" if args.grouping_mode == "individual" else "Family"
@@ -342,6 +351,31 @@ def generate_family_report(
             ).emit(console)
 
         cs.emit("")
+
+    # Uniwidth summary across all families
+    uniwidth_families = [
+        (fam, group) for fam, group in families.items()
+        if any(fm.is_uniwidth for fm in group)
+    ]
+    if uniwidth_families:
+        cs.emit("")
+        cs.StatusIndicator("info").add_message(
+            f"[bold]Uniwidth families:[/bold] {cs.fmt_count(len(uniwidth_families))}"
+        ).emit(console)
+        for fam, group in uniwidth_families:
+            _, uni_score, uni_consistent, uni_total = detect_uniwidth_family(
+                group, config.uniwidth_consistency_threshold
+            )
+            if uni_total > 0:
+                cs.emit(
+                    f"  {fam}: {uni_score:.0%} consistency "
+                    f"({uni_consistent}/{uni_total} glyphs, {len(group)} fonts)",
+                    console=console,
+                )
+        cs.emit(
+            "  [dim]Vertical metrics normalization reinforces uniwidth design intent[/dim]",
+            console=console,
+        )
 
     # Summary: report single-font families that were skipped
     single_font_families = [fam for fam, group in families.items() if len(group) == 1]

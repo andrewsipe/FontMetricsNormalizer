@@ -1,6 +1,6 @@
 """Font measurement data models."""
 
-from typing import Optional
+from typing import Dict, Optional
 
 
 class FontMeasures:
@@ -18,9 +18,13 @@ class FontMeasures:
         self.ascender_max: Optional[int] = None
         self.descender_min: Optional[int] = None
 
+        # Horizontal metrics (for uniwidth detection)
+        self.advance_widths: Optional[Dict[int, int]] = None
+
         # Detection flags (set during measurement)
         self.is_unicase: bool = False
         self.is_script: bool = False
+        self.is_uniwidth: bool = False
         self.is_decorative_candidate: bool = False  # Standalone detection
         self.is_excluded_from_calculations: bool = (
             False  # Excluded from family calculations

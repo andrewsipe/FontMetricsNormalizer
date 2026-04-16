@@ -41,6 +41,13 @@ LOWERCASE_XHEIGHT_SAMPLES: Tuple[int, ...] = (
     0x007A,  # z
 )
 
+# Codepoints for uniwidth detection (A-Z, a-z, 0-9)
+UNIWIDTH_SAMPLE_CODEPOINTS: Tuple[int, ...] = (
+    *range(0x0041, 0x005B),  # A-Z
+    *range(0x0061, 0x007B),  # a-z
+    *range(0x0030, 0x003A),  # 0-9
+)
+
 # Uppercase letters for cap height sampling (flat tops, no curves that might exceed)
 UPPERCASE_CAPHEIGHT_SAMPLES: Tuple[int, ...] = (
     0x0042,  # B
@@ -94,4 +101,8 @@ class MetricsConfig:
     )
     auto_adjust_target: bool = (
         True  # Enable automatic target adjustment based on x-height
+    )
+    # Uniwidth detection
+    uniwidth_consistency_threshold: float = (
+        0.90  # 90% of sampled glyphs must have identical advance widths
     )

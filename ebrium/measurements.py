@@ -37,12 +37,14 @@ LOWERCASE_XHEIGHT_SAMPLES = config.LOWERCASE_XHEIGHT_SAMPLES
 UPPERCASE_CAPHEIGHT_SAMPLES = config.UPPERCASE_CAPHEIGHT_SAMPLES
 LOWER_ASCENDER_CODEPOINTS = config.LOWER_ASCENDER_CODEPOINTS
 LOWER_DESCENDER_CODEPOINTS = config.LOWER_DESCENDER_CODEPOINTS
+UNIWIDTH_SAMPLE_CODEPOINTS = config.UNIWIDTH_SAMPLE_CODEPOINTS
 
 # Import font I/O functions
 _read_ttfont = font_io._read_ttfont
 _get_upm = font_io._get_upm
 _codepoint_bounds = font_io._codepoint_bounds
 _font_overall_bounds = font_io._font_overall_bounds
+_glyph_advance_widths = font_io._glyph_advance_widths
 
 FontMeasures = models.FontMeasures
 
@@ -384,6 +386,7 @@ def measure_fonts(
     assume_script: Optional[List[str]] = None,
     assume_decorative: Optional[List[str]] = None,
     assume_unicase: Optional[List[str]] = None,
+    assume_uniwidth: Optional[List[str]] = None,
     exclude_measuring: Optional[List[str]] = None,
 ) -> List[FontMeasures]:
     """Measure fonts and extract family names.
@@ -580,6 +583,19 @@ def measure_fonts(
                     fm.is_decorative_candidate = detect_decorative_standalone(
                         fm, temp_config
                     )
+
+                # 4. Collect advance widths for uniwidth detection
+                fm.advance_widths = _glyph_advance_widths(
+                    font, UNIWIDTH_SAMPLE_CODEPOINTS
+                )
+
+                # 5. Uniwidth force flag (per-font hint; family-level
+                #    detection happens later in planning)
+                if assume_uniwidth:
+                    for pattern in assume_uniwidth:
+                        if fnmatch.fnmatch(filename, pattern):
+                            fm.is_uniwidth = True
+                            break
 
                 measures.append(fm)
             except Exception as e:

@@ -180,6 +180,14 @@ def parse_args() -> argparse.Namespace:
         "Supports glob patterns. Can be used multiple times.",
     )
     detection.add_argument(
+        "--assume-uniwidth",
+        action="append",
+        metavar="PATTERN",
+        help="Treat matching fonts as uniwidth (e.g., '*Unifora*', 'FontName-*'). "
+        "If any font in a family matches, the entire family is flagged as uniwidth. "
+        "Supports glob patterns. Can be used multiple times.",
+    )
+    detection.add_argument(
         "--exclude-measuring",
         action="append",
         metavar="PATTERN",
@@ -412,6 +420,7 @@ def main() -> None:
                 assume_script=args.assume_script,
                 assume_decorative=args.assume_decorative,
                 assume_unicase=args.assume_unicase,
+                assume_uniwidth=args.assume_uniwidth,
                 exclude_measuring=args.exclude_measuring,
             )
         except KeyboardInterrupt:

@@ -88,8 +88,13 @@ def save_measurements_checkpoint(
                 "descender_min": fm.descender_min,
                 "is_unicase": fm.is_unicase,
                 "is_script": fm.is_script,
+                "is_uniwidth": fm.is_uniwidth,
                 "is_decorative_candidate": fm.is_decorative_candidate,
             }
+            if fm.advance_widths:
+                measure_data["advance_widths"] = {
+                    str(cp): w for cp, w in fm.advance_widths.items()
+                }
             checkpoint_data["measures"].append(measure_data)
 
         checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
@@ -159,9 +164,13 @@ def load_measurements_checkpoint(
             fm.descender_min = measure_data.get("descender_min")
             fm.is_unicase = measure_data.get("is_unicase", False)
             fm.is_script = measure_data.get("is_script", False)
+            fm.is_uniwidth = measure_data.get("is_uniwidth", False)
             fm.is_decorative_candidate = measure_data.get(
                 "is_decorative_candidate", False
             )
+            raw_widths = measure_data.get("advance_widths")
+            if raw_widths:
+                fm.advance_widths = {int(cp): w for cp, w in raw_widths.items()}
             loaded_measures.append(fm)
 
         # Determine missing files

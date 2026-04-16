@@ -34,6 +34,64 @@ detect_optical_clusters = clustering.detect_optical_clusters
 _read_ttfont = font_io._read_ttfont
 
 
+def detect_uniwidth_family(
+    group: List[FontMeasures],
+    threshold: float = 0.90,
+) -> Tuple[bool, float, int, int]:
+    """Detect if fonts in a group share identical advance widths (uniwidth).
+
+    A uniwidth family maintains identical advance widths per glyph across all
+    styles (weights, slants), so text layout doesn't reflow when switching styles.
+
+    Compares advance widths for sampled codepoints across all family members.
+    For mixed-UPM families, widths are normalized before comparison.
+
+    Args:
+        group: Font measures to check (should be from the same family)
+        threshold: Minimum fraction of consistent codepoints to flag as uniwidth
+
+    Returns:
+        (is_uniwidth, score, consistent_count, total_count)
+    """
+    fonts_with_widths = [
+        fm for fm in group if fm.advance_widths and fm.upm > 0
+    ]
+
+    if len(fonts_with_widths) < 2:
+        return (False, 0.0, 0, 0)
+
+    upms = {fm.upm for fm in fonts_with_widths}
+    same_upm = len(upms) == 1
+
+    codepoint_sets = [set(fm.advance_widths.keys()) for fm in fonts_with_widths]
+    common_codepoints = codepoint_sets[0]
+    for s in codepoint_sets[1:]:
+        common_codepoints = common_codepoints & s
+
+    if not common_codepoints:
+        return (False, 0.0, 0, 0)
+
+    consistent_count = 0
+    total_count = len(common_codepoints)
+
+    for cp in sorted(common_codepoints):
+        if same_upm:
+            widths = {fm.advance_widths[cp] for fm in fonts_with_widths}
+        else:
+            widths = {
+                round(fm.advance_widths[cp] * 1000 / fm.upm)
+                for fm in fonts_with_widths
+            }
+
+        if len(widths) == 1:
+            consistent_count += 1
+
+    score = consistent_count / total_count if total_count > 0 else 0.0
+    is_uniwidth = score >= threshold
+
+    return (is_uniwidth, score, consistent_count, total_count)
+
+
 def compute_family_normalized_extremes(
     measures: List[FontMeasures],
 ) -> Tuple[float, float]:
@@ -813,6 +871,37 @@ def build_plans(
         # Store in each font measure for status output
         for fm in group:
             fm.family_upm_majority = family_upm_majority
+
+        # Uniwidth detection (family-level)
+        forced_uniwidth = any(fm.is_uniwidth for fm in group)
+        if forced_uniwidth:
+            for fm in group:
+                fm.is_uniwidth = True
+            if verbosity >= Verbosity.VERBOSE:
+                cs.StatusIndicator("info").add_message(
+                    f"[field]Family:[/field] '{fam}' — "
+                    f"[bold]Uniwidth (forced):[/bold] {cs.fmt_count(len(group))} font(s)"
+                ).emit(console)
+        elif len(group) >= 2:
+            is_uni, uni_score, uni_consistent, uni_total = detect_uniwidth_family(
+                group, config.uniwidth_consistency_threshold
+            )
+            if is_uni:
+                for fm in group:
+                    fm.is_uniwidth = True
+                cs.StatusIndicator("info").add_message(
+                    f"[field]Family:[/field] '{fam}' — "
+                    f"[bold]Uniwidth detected:[/bold] {uni_score:.0%} consistency "
+                    f"({cs.fmt_count(uni_consistent)}/{cs.fmt_count(uni_total)} glyphs identical "
+                    f"across {cs.fmt_count(len(group))} fonts)"
+                ).emit(console)
+            elif uni_total > 0 and uni_score >= 0.50:
+                cs.StatusIndicator("info").add_message(
+                    f"[field]Family:[/field] '{fam}' — "
+                    f"[bold]Partial uniwidth:[/bold] {uni_score:.0%} consistency "
+                    f"({cs.fmt_count(uni_consistent)}/{cs.fmt_count(uni_total)} glyphs identical) — "
+                    f"may contain distinct width classes"
+                ).emit(console)
 
         # Force-hhea mode: apply averaged hhea/typo values to all fonts
         if force_hhea:
@@ -1642,6 +1731,7 @@ def build_plans(
                 "decorative": [fm.path for fm in decorative_outliers],
                 "script": [fm.path for fm in script_outliers],
                 "unicase": [fm.path for fm in group if fm.is_unicase],
+                "is_uniwidth": any(fm.is_uniwidth for fm in group),
             }
 
     return family_plans, clusters_cache
