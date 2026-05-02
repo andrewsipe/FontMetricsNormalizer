@@ -19,6 +19,7 @@ https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/ebrium/m
 https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/ebrium/models.py
 https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/ebrium/planning.py
 https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/ebrium/validation.py
+https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/ebrium/variation_probe.py
 
 # FontCore/
 https://raw.githubusercontent.com/andrewsipe/FontCore/main/CoreDemoTool.py
