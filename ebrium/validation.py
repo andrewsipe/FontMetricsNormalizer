@@ -34,6 +34,23 @@ detect_uniwidth_family = planning.detect_uniwidth_family
 
 
 def validate_args(args: argparse.Namespace) -> None:
+    if getattr(args, "probe_variation_metrics", False):
+        irrelevant = []
+        if getattr(args, "force_baseline", False):
+            irrelevant.append("--force-baseline")
+        if getattr(args, "force_baseline_main_cluster", False):
+            irrelevant.append("--force-baseline-main-cluster")
+        if getattr(args, "force_baseline_from", None):
+            irrelevant.append("--force-baseline-from")
+        if args.dry_run:
+            irrelevant.append("--dry-run")
+        if args.report:
+            irrelevant.append("--report")
+        if irrelevant:
+            cs.StatusIndicator("info").add_message(
+                f"--probe-variation-metrics only inspects tables; ignoring: {', '.join(irrelevant)}"
+            ).emit(console)
+
     # Validate letter-height (percentage input)
     if args.letter_height <= 50 or args.letter_height > 200:
         cs.StatusIndicator("warning").add_message(
@@ -73,6 +90,34 @@ def validate_args(args: argparse.Namespace) -> None:
             "Family names will be normalized before grouping",
             indent_level=1,
         ).emit(console)
+
+    if getattr(args, "force_baseline_main_cluster", False) and not getattr(
+        args, "force_baseline", False
+    ):
+        cs.StatusIndicator("warning").add_message(
+            "--force-baseline-main-cluster has no effect without --force-baseline"
+        ).emit(console)
+
+    _fb_from = getattr(args, "force_baseline_from", None)
+    _fb_from = (_fb_from or "").strip() if _fb_from else ""
+    if _fb_from and not getattr(args, "force_baseline", False):
+        cs.StatusIndicator("warning").add_message(
+            "--force-baseline-from has no effect without --force-baseline"
+        ).emit(console)
+
+    if getattr(args, "force_baseline", False):
+        if _fb_from and getattr(args, "force_baseline_main_cluster", False):
+            cs.StatusIndicator("info").add_message(
+                "With --force-baseline-from, reference selection ignores --force-baseline-main-cluster"
+            ).emit(console)
+        if args.grouping_mode == "individual":
+            cs.StatusIndicator("warning").add_message(
+                "--force-baseline has no effect with --individual (single-font families)"
+            ).emit(console)
+        if getattr(args, "safe_hhea", False):
+            cs.StatusIndicator("warning").add_message(
+                "--force-baseline is ignored with --safe-hhea (averaged typo values take precedence)"
+            ).emit(console)
 
     if args.grouping_mode == "individual":
         if (

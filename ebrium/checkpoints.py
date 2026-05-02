@@ -39,7 +39,10 @@ def compute_config_hash(config: MetricsConfig) -> str:
         f"{config.unicase_threshold}:"
         f"{config.script_span_threshold}:"
         f"{config.script_asymmetry_ratio}:"
-        f"{config.max_span_ratio}"
+        f"{config.max_span_ratio}:"
+        f"{int(config.force_baseline)}:"
+        f"{int(config.force_baseline_main_cluster_only)}:"
+        f"{getattr(config, 'force_baseline_from_pattern', '') or ''}"
     )
     return hashlib.md5(config_str.encode()).hexdigest()[:8]
 

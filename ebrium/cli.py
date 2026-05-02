@@ -220,6 +220,34 @@ def parse_args() -> argparse.Namespace:
         "Reads existing values from included fonts, averages them, and applies uniformly to all fonts. "
         "Preserves original vertical span while ensuring consistent hhea metrics. Win values use max ranges.",
     )
+    grouping_modifiers.add_argument(
+        "--force-baseline",
+        action="store_true",
+        help="After planning, unify typographic line box (typo+hhea ascent/descent) across the family "
+        "using normalized metrics from the style with the largest planned vertical span "
+        "(ignores decorative/script outliers when auto-picking the reference). macOS/UI centering aligns "
+        "with typo/hhea far more often than Win. Optional --force-baseline-from pins the reference "
+        "(e.g. unicase aligns with whichever master you designate; decorative outliers allowed—know your palette). "
+        "Single-font OS/2 families (e.g. 'Name Variable') are unchanged—merge with "
+        "--combine 'Family A,Family B'.",
+    )
+    grouping_modifiers.add_argument(
+        "--force-baseline-main-cluster",
+        action="store_true",
+        help="When used with --force-baseline, pick the reference master only from the largest optical cluster "
+        "(typically one design height masters like H200Wx), excluding extreme height standalone clusters "
+        "(e.g. lone H1000W200). Ignored when --force-baseline-from matches a font.",
+    )
+    grouping_modifiers.add_argument(
+        "--force-baseline-from",
+        metavar="PATH_OR_GLOB",
+        default=None,
+        help="When used with --force-baseline, use this file as the reference instead of auto-picking largest span: "
+        "absolute path, exact filename (e.g. Family-Medium.otf), or shell-style glob on the basename "
+        "(e.g. 'Flexible-H200W500.otf', 'Flexible-*W600.otf'). "
+        "Searches current family members only (per superfamily/group). Decorative/script faces are allowed; "
+        "unicase aligns with whatever ratios you encode—know your design before pointing at outliers.",
+    )
 
     # Hidden expert thresholds (not shown in --help)
     parser.add_argument(
@@ -252,6 +280,12 @@ def parse_args() -> argparse.Namespace:
         default=0,
         help="Increase verbosity level. Use -v for VERBOSE, -vv for DEBUG level output",
     )
+    parser.add_argument(
+        "--probe-variation-metrics",
+        action="store_true",
+        help="Read-only: report MVAR/HVAR coverage and delta ranges (fvar axis poles). "
+        "Does not measure or write fonts. Use -v to print per-pole MVAR deltas.",
+    )
     return parser.parse_args()
 
 
@@ -263,6 +297,21 @@ def main() -> None:
     # --report implies --dry-run
     if args.report:
         args.dry_run = True
+
+    if getattr(args, "probe_variation_metrics", False):
+        files_probe = scan_fonts(args.paths or ["."], args.recursive, args.use_ttx)
+        if not files_probe:
+            cs.StatusIndicator("error").add_message("No font files found").emit(console)
+            sys.exit(1)
+        from . import variation_probe
+
+        variation_probe.run_probe(files_probe, verbose=args.verbose >= 1)
+        elapsed = time.time() - start_time
+        cs.emit(
+            f"{cs.INDENT}[darktext.dim]Total time: [bold]{elapsed:.1f}[/bold]s[/darktext.dim]",
+            console=console,
+        )
+        sys.exit(0)
 
     # Convert percentage inputs to internal fraction representation
     config = MetricsConfig(
@@ -277,6 +326,13 @@ def main() -> None:
         decorative_span_threshold=args.decorative_threshold,
         unicase_threshold=args.unicase_threshold,
         auto_adjust_target=not args.no_auto_adjust,
+        force_baseline=getattr(args, "force_baseline", False),
+        force_baseline_main_cluster_only=getattr(
+            args, "force_baseline_main_cluster", False
+        ),
+        force_baseline_from_pattern=(
+            (getattr(args, "force_baseline_from", None) or "").strip() or None
+        ),
     )
 
     files = scan_fonts(args.paths or ["."], args.recursive, args.use_ttx)

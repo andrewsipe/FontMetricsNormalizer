@@ -102,6 +102,12 @@ class MetricsConfig:
     auto_adjust_target: bool = (
         True  # Enable automatic target adjustment based on x-height
     )
+    # Unify typo line box across a family for UI centering issues (mixed width masters)
+    force_baseline: bool = False
+    # Prefer reference master from largest optical cluster only (omit height/width extremes)
+    force_baseline_main_cluster_only: bool = False
+    # Exact path, basename, or glob fnmatch basename (e.g. "Family-Bold.otf", "Flexible-*W500.otf")
+    force_baseline_from_pattern: Optional[str] = None
     # Uniwidth detection
     uniwidth_consistency_threshold: float = (
         0.90  # 90% of sampled glyphs must have identical advance widths

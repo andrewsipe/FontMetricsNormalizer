@@ -1,5 +1,6 @@
 """Metrics planning functions for computing normalization targets."""
 
+import fnmatch
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -400,6 +401,225 @@ def finalize_metrics(fm: FontMeasures) -> None:
         fm.target_win_asc = max(fm.target_win_asc, fm.target_typo_asc)
     if fm.target_win_desc is not None and fm.target_typo_desc is not None:
         fm.target_win_desc = max(fm.target_win_desc, abs(fm.target_typo_desc))
+
+
+def _planned_typo_span_norm(fm: FontMeasures) -> Optional[float]:
+    if (
+        fm.upm <= 0
+        or fm.target_typo_asc is None
+        or fm.target_typo_desc is None
+    ):
+        return None
+    return (fm.target_typo_asc / fm.upm) + abs(fm.target_typo_desc / fm.upm)
+
+
+def _bbox_span_norm_for_reference(fm: FontMeasures) -> float:
+    if fm.max_y is None or fm.min_y is None or fm.upm <= 0:
+        return 0.0
+    return (fm.max_y - fm.min_y) / fm.upm
+
+
+def _fonts_matching_force_baseline_from(
+    group: List[FontMeasures], pattern: str
+) -> List[FontMeasures]:
+    """Match family members to --force-baseline-from (path, filename, or fnmatch on basename)."""
+    pattern = pattern.strip()
+    if not pattern:
+        return []
+    want_resolved: Optional[Path] = None
+    p_in = Path(pattern)
+    try:
+        if p_in.is_absolute():
+            want_resolved = p_in.resolve()
+        elif "/" in pattern or "\\" in pattern:
+            want_resolved = (Path.cwd() / p_in).resolve()
+    except OSError:
+        want_resolved = None
+
+    matched: List[FontMeasures] = []
+    seen: set[str] = set()
+    for fm in group:
+        if fm.path in seen:
+            continue
+        fp = Path(fm.path)
+        hit = False
+        if want_resolved is not None:
+            try:
+                if fp.resolve() == want_resolved:
+                    hit = True
+            except OSError:
+                pass
+        if not hit and fp.name == pattern:
+            hit = True
+        if not hit and fnmatch.fnmatch(fp.name, pattern):
+            hit = True
+        if hit:
+            matched.append(fm)
+            seen.add(fm.path)
+    return matched
+
+
+def _force_baseline_reference_candidates(group: List[FontMeasures]) -> List[FontMeasures]:
+    """Fonts considered for \"tallest line box\" reference (exclude obvious outliers)."""
+    core: List[FontMeasures] = []
+    for fm in group:
+        if getattr(fm, "is_excluded_from_calculations", False):
+            continue
+        if getattr(fm, "is_decorative_outlier", False) or getattr(fm, "is_script", False):
+            continue
+        core.append(fm)
+    if core:
+        return core
+    non_excl = [
+        fm
+        for fm in group
+        if not getattr(fm, "is_excluded_from_calculations", False)
+    ]
+    if non_excl:
+        return non_excl
+    return list(group)
+
+
+def maybe_apply_force_family_baseline(
+    fam: str,
+    group: List[FontMeasures],
+    config: MetricsConfig,
+    verbosity: Verbosity,
+    grouping_mode: str,
+    force_hhea: bool,
+    main_cluster_snapshot: Optional[List[FontMeasures]] = None,
+) -> None:
+    """Apply identical normalized typo+hhea ascent/descent to all fonts when enabled."""
+    if not getattr(config, "force_baseline", False):
+        return
+    if force_hhea:
+        return
+    if grouping_mode == "individual" or len(group) < 2:
+        return
+
+    pool: List[FontMeasures] = list(group)
+    explicit_pattern = getattr(config, "force_baseline_from_pattern", None)
+    if getattr(config, "force_baseline_main_cluster_only", False) and not (
+        explicit_pattern and explicit_pattern.strip()
+    ):
+        if main_cluster_snapshot:
+            mc_paths = {fm.path for fm in main_cluster_snapshot}
+            narrowed = [fm for fm in group if fm.path in mc_paths]
+            if narrowed:
+                pool = narrowed
+            elif verbosity >= Verbosity.BRIEF:
+                cs.StatusIndicator("warning").add_message(
+                    f"[field]Family:[/field] '{fam}' — "
+                    "[bold]--force-baseline-main-cluster:[/bold] no family fonts matched "
+                    "main cluster snapshot; using full family for reference selection",
+                ).emit(console)
+        elif verbosity >= Verbosity.VERBOSE:
+            cs.StatusIndicator("info").add_message(
+                f"[field]Family:[/field] '{fam}' — "
+                "[dim]--force-baseline-main-cluster:[/dim] no cluster snapshot for this "
+                "family — using full group for reference selection",
+            ).emit(console)
+
+    best: Optional[FontMeasures] = None
+    best_key: Optional[Tuple[float, float]] = None
+    chosen_explicit = False
+
+    if explicit_pattern and explicit_pattern.strip():
+        raw_matches = _fonts_matching_force_baseline_from(
+            group, explicit_pattern
+        )
+        viable = [
+            fm for fm in raw_matches if _planned_typo_span_norm(fm) is not None
+        ]
+        if len(viable) == 1:
+            best = viable[0]
+            chosen_explicit = True
+        elif len(viable) > 1:
+            viable.sort(key=lambda x: x.path)
+            best = viable[0]
+            chosen_explicit = True
+            cs.StatusIndicator("warning").add_message(
+                f"[field]Family:[/field] '{fam}' — [bold]--force-baseline-from[/bold] matched "
+                f"{len(viable)} font(s); using {Path(best.path).name} (first by path sort)",
+            ).emit(console)
+        elif raw_matches:
+            cs.StatusIndicator("warning").add_message(
+                f"[field]Family:[/field] '{fam}' — [bold]--force-baseline-from[/bold] matched "
+                f"{len(raw_matches)} font(s) but none have planned typo targets yet; "
+                "falling back to automatic reference",
+            ).emit(console)
+        else:
+            cs.StatusIndicator("warning").add_message(
+                f"[field]Family:[/field] '{fam}' — [bold]--force-baseline-from[/bold] "
+                f"{explicit_pattern!r} matched no font in this group; "
+                "falling back to automatic reference",
+            ).emit(console)
+
+    if best is None:
+        candidates = _force_baseline_reference_candidates(pool)
+        for fm in candidates:
+            span_norm = _planned_typo_span_norm(fm)
+            if span_norm is None:
+                continue
+            key = (span_norm, _bbox_span_norm_for_reference(fm))
+            if best_key is None or key > best_key:
+                best_key = key
+                best = fm
+
+    if best is None:
+        cs.StatusIndicator("warning").add_message(
+            f"[field]Family:[/field] '{fam}' — --force-baseline skipped "
+            "(no fonts with planned typo targets)",
+        ).emit(console)
+        return
+
+    ref_na = best.target_typo_asc / best.upm  # type: ignore[operator]
+    ref_nd = best.target_typo_desc / best.upm  # type: ignore[operator]
+    ref_span = _planned_typo_span_norm(best) or 0.0
+
+    indicator = cs.StatusIndicator("info").add_message(
+        f"[field]Family:[/field] '{fam}' — "
+        f"[bold]Force baseline:[/bold] unified typo+hhea metrics from "
+        f"{best.path}",
+    ).add_item(
+        f"Reference span≈ {ref_span:.4f} UPM (asc ratio {ref_na:.4f}, desc ratio {ref_nd:.4f})",
+        indent_level=1,
+    )
+    if chosen_explicit:
+        indicator.add_item(
+            "Reference from --force-baseline-from (not auto largest span)",
+            indent_level=1,
+        )
+    if getattr(config, "force_baseline_main_cluster_only", False) and not chosen_explicit:
+        indicator.add_item(
+            "Reference pool limited to largest optical cluster (--force-baseline-main-cluster)",
+            indent_level=1,
+        )
+    if getattr(best, "is_decorative_outlier", False) or getattr(best, "is_script", False):
+        indicator.add_item(
+            "[warning]Reference is decorative/script—typo line box is copied to the whole family; "
+            "check Win bounds and design intent[/warning]",
+            indent_level=1,
+        )
+    if verbosity >= Verbosity.VERBOSE:
+        indicator.add_item(
+            f"Tie-break bbox span: {_bbox_span_norm_for_reference(best):.4f} UPM",
+            indent_level=1,
+        )
+    indicator.emit(console)
+
+    for fm in group:
+        if fm.upm <= 0:
+            continue
+        typ_asc_i = int(round(ref_na * fm.upm))
+        typ_desc_i = int(round(ref_nd * fm.upm))
+        # Descender ratios are negative integers; deepen to actual glyphs if forced box is too shallow
+        if fm.descender_min is not None:
+            typ_desc_i = min(typ_desc_i, int(fm.descender_min))
+
+        fm.target_typo_asc = typ_asc_i
+        fm.target_typo_desc = typ_desc_i
+        finalize_metrics(fm)
 
 
 def get_cluster_normalized_typo(
@@ -861,6 +1081,8 @@ def build_plans(
     clusters_cache: Dict[str, Dict[str, List[str]]] = {}
 
     for fam, group in families.items():
+        # Snapshot for --force-baseline-main-cluster (per iteration; clears prior family leak)
+        baseline_mc_snap: Optional[List[FontMeasures]] = None
         # Compute UPM majority for status reporting
         upm_counts: Dict[int, int] = {}
         for fm in group:
@@ -1041,6 +1263,15 @@ def build_plans(
         if grouping_mode == "conservative":
             # Safe-max mode: use bbox extremes for all fonts (prevents clipping)
             plan_safe_metrics(group, config)
+            maybe_apply_force_family_baseline(
+                fam,
+                group,
+                config,
+                verbosity,
+                grouping_mode,
+                force_hhea,
+                main_cluster_snapshot=group,
+            )
             family_plans[fam] = (
                 compute_family_normalized_extremes(group)[0],
                 compute_family_normalized_extremes(group)[1],
@@ -1705,6 +1936,7 @@ def build_plans(
             # Level 8: VALIDATE: Check cluster consistency
             if main_cluster and len(main_cluster) > 1:
                 validate_cluster_consistency(main_cluster)
+            baseline_mc_snap = main_cluster
         else:
             # Single font family: compute ascender and use adaptive
             core_asc = compute_family_normalized_ascender(group, config)
@@ -1712,6 +1944,16 @@ def build_plans(
             # Finalize single font
             for fm in group:
                 finalize_metrics(fm)
+
+        maybe_apply_force_family_baseline(
+            fam,
+            group,
+            config,
+            verbosity,
+            grouping_mode,
+            force_hhea,
+            main_cluster_snapshot=baseline_mc_snap,
+        )
 
         family_plans[fam] = (
             fam_min,
