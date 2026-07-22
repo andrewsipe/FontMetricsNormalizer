@@ -1,5 +1,6 @@
 # Root directory
 https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/.gitmodules
+https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/FontCore
 https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/README.md
 https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/pyproject.toml
 https://raw.githubusercontent.com/andrewsipe/FontMetricsNormalizer/main/requirements.txt
