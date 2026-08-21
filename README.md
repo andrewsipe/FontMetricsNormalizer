@@ -2,6 +2,8 @@
 
 Font metrics normalization tool for family-wide metric consistency.
 
+Declutter notes for a later product pass: see `PRODUCT_REFINEMENT_NOTES.md`.
+
 ## Overview
 
 Normalizes vertical metrics across a font family without changing unitsPerEm or glyph outlines. Ensures consistent metrics for proper text rendering across different font styles.
